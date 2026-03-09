@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  apicultor:
+    container_name: apiCultor
+    build: .
+    environment:
+      TZ: Europe/Madrid
+    ports:
+      - 3335:3335
+    volumes:
+      - ./csvTickets:/usr/src/csvTickets
+      - ./logs:/usr/src/logs
+    restart: unless-stopped

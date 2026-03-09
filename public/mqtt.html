@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Sincronizaciones</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f7fa;
+      margin: 0;
+      padding: 40px 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      width: 350px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #333;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    input[type='number'],
+    input[type='text'] {
+      width: 100%;
+      padding: 8px 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      background-color: #007bff;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:disabled {
+      background-color: #7aa7e9;
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+
+    #tiendas {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    #tiendas label {
+      display: flex;
+      align-items: center;
+      font-weight: normal;
+      color: #333;
+    }
+
+    #tiendas input[type='checkbox'] {
+      margin-right: 10px;
+      transform: scale(1.2);
+      accent-color: #007bff;
+    }
+
+    .resultado {
+      margin-top: 15px;
+      font-size: 13px;
+      background: #f1f3f6;
+      border-radius: 5px;
+      padding: 8px;
+      color: #333;
+      white-space: pre-wrap;
+    }
+
+    .oculto {
+      display: none;
+    }
+
+    .texto {
+      margin-top: 15px;
+      padding: 10px;
+      background: #f1f3f6;
+      border-radius: 5px;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .uuid {
+      color: #666;
+      margin-left: 4px;
+      font-family: monospace;
+    }
+
+    ul.empresas li {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    /* Botón flotante de chuleta */
+    #chuletaBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      font-size: 32px;
+      cursor: pointer;
+      z-index: 1000;
+      transition: transform 0.2s;
+    }
+
+    #chuletaBtn:hover {
+      transform: scale(1.2);
+    }
+
+    /* Caja de la chuleta flotante */
+    #contenido {
+      position: fixed;
+      bottom: 70px;
+      right: 20px;
+      max-width: 350px;
+      background: #f1f3f6;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      z-index: 999;
+      font-size: 14px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Factura Intercompany -->
+  <div class="container">
+    <h2>Sincronizar Factura Intercompany</h2>
+
+    <label for="dia">Día (emisión):</label>
+    <input type="number" id="dia" min="1" max="31" required />
+
+    <label for="mes">Mes (tabla de la factura):</label>
+    <input type="number" id="mes" min="1" max="12" required />
+
+    <label for="anio">Año (tabla de la factura):</label>
+    <input type="number" id="anio" min="2020" max="2030" required />
+    <label>Facturas:</label>
+    <div id="facturas">
+      <label><input type="radio" name="factura" id="facFilapena" value="filapena" /> Filapeña</label>
+      <label><input type="radio" name="factura" id="facImeMil" value="ime_mil" /> Ime Mil</label>
+      <label><input type="radio" name="factura" id="facFranquicias" value="franquicias" /> Franquicias</label>
+      <label><input type="radio" name="factura" id="facTodas" value="todas" /> Todas</label>
+    </div>
+
+    <label for="companyID">Company ID:</label>
+    <input type="text" id="companyID" required />
+
+    <label for="entorno">Entorno:</label>
+    <input type="text" id="entorno" required />
+
+    <button id="btnIntercompany" onclick="enviarIntercompany()">Enviar</button>
+    <div id="resultadoIntercompany" class="resultado"></div>
+  </div>
+
+  <!-- Ventas y Cierres (Filapeña) -->
+  <div class="container">
+    <h2>Sincronizar Ventas y Cierres (Filapeña)</h2>
+
+    <label for="diaInicio">Día inicio:</label>
+    <input type="number" id="diaInicio" min="1" max="31" required />
+
+    <label for="diaFin">Día fin:</label>
+    <input type="number" id="diaFin" min="1" max="31" required />
+
+    <label for="mes2">Mes:</label>
+    <input type="number" id="mes2" min="1" max="12" required />
+
+    <label for="anio2">Año:</label>
+    <input type="number" id="anio2" min="2020" max="2030" required />
+
+    <label for="turno">Turno (0: Todo el día, 1: Mañana, 2: Tarde):</label>
+    <input type="number" id="turno" min="0" max="2" required />
+
+    <label for="tiendaFilapena">Tiendas (pon la licencia, si no pones nada se envían todas):</label>
+    <input type="text" id="tiendaFilapena" required />
+
+    <label for="companyID2">Company ID:</label>
+    <input type="text" id="companyID2" required />
+
+    <label for="entornoVC">Entorno:</label>
+    <input type="text" id="entornoVC" required />
+
+    <button id="btnVentas" onclick="enviarVentasCierres()">Enviar</button>
+    <div id="resultadoVentas" class="resultado"></div>
+  </div>
+
+  <!-- Ventas y Cierres (Ime Mil) -->
+  <div class="container">
+    <h2>Sincronizar Ventas y Cierres (Ime Mil)</h2>
+
+    <label for="diaInicio1">Día inicio:</label>
+    <input type="number" id="diaInicio1" min="1" max="31" required />
+
+    <label for="diaFin1">Día fin:</label>
+    <input type="number" id="diaFin1" min="1" max="31" required />
+
+    <label for="mes3">Mes:</label>
+    <input type="number" id="mes3" min="1" max="12" required />
+
+    <label for="anio3">Año:</label>
+    <input type="number" id="anio3" min="2020" max="2030" required />
+
+    <label for="turno1">Turno (0: Todo el día, 1: Mañana, 2: Tarde):</label>
+    <input type="number" id="turno1" min="0" max="2" required />
+
+    <label for="tiendaImeMil">Tiendas (pon la licencia, si no pones nada se envían todas):</label>
+    <input type="text" id="tiendaImeMil" required />
+
+    <label for="companyID3">Company ID:</label>
+    <input type="text" id="companyID3" required />
+
+    <label for="entornoVCI">Entorno:</label>
+    <input type="text" id="entornoVCI" required />
+
+    <button id="btnVentasImeMil" onclick="enviarVentasCierresImeMil()">Enviar</button>
+    <div id="resultadoVentasImeMil" class="resultado"></div>
+  </div>
+
+  <!-- Botón flotante de chuleta -->
+  <div id="chuletaBtn">📒</div>
+
+  <!-- Texto oculto de chuleta -->
+  <div id="contenido" class="texto oculto">
+    <h2>1 enero:</h2>
+    <section>
+      <h3>Entorno: </h3>
+      <ul>
+        <li>Production</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>Empresas:</h3>
+      <ul>
+        <li>
+          IME MIL, S.L.U
+          <span class="uuid">(d2a97ec2-654e-ef11-bfe4-7c1e5234e806)</span>
+        </li>
+        <li>
+          Filapeña S.L.
+          <span class="uuid">(86ee4d52-801e-ef11-9f88-0022489dfd5d)</span>
+        </li>
+      </ul>
+    </section>
+    <hr style="margin: 24px 0; border: none; border-top: 2px dashed #bbb;">
+    <h2>Desarrollo:</h2>
+    <section>
+      <h3>Entornos:</h3>
+      <ul>
+        <li>O365_Paralelos_2025</li>
+        <li>O365_Copia_010925</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>Empresas:</h3>
+      <ul class="empresas">
+        <li>
+          Ime Mil S.L.U Usuarios O365
+          <span class="uuid">(0dfb8fe5-a786-f011-b419-7ced8d2de406)</span>
+        </li>
+        <li>
+          Ime Mil S.L.U paralelo 2025
+          <span class="uuid">(bc605139-9d86-f011-b419-7ced8d2de406)</span>
+        </li>
+        <li>
+          Fila Peña S.L.U. paralelo2 2025
+          <span class="uuid">(eeaa4075-6648-f011-be59-7c1e5237e11a)</span>
+        </li>
+        <li>
+          Fila Peña_integraciones01/04
+          <span class="uuid">(2086290c-6710-f011-9346-7c1e52fb1a27)</span>
+        </li>
+        <li>
+          Silema BCN S.L.U paralelo 2025
+          <span class="uuid">(efab38f7-016e-f011-8eef-7ced8d2c3f66)</span>
+        </li>
+        <li>
+          Silema BCN Usuarios O365
+          <span class="uuid">(07ce4e9d-026e-f011-8eef-7ced8d2c3f66)</span>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <script>
+    async function enviarIntercompany() {
+      const dia = document.getElementById('dia').value.padStart(2, '0');
+      const mes = document.getElementById('mes').value.padStart(2, '0');
+      const anio = document.getElementById('anio').value.padStart(4, '0');
+      const companyID = document.getElementById('companyID').value.trim();
+      const entorno = document.getElementById('entorno').value.trim();
+      const boton = document.getElementById('btnIntercompany');
+      const resultadoDiv = document.getElementById('resultadoIntercompany');
+      const factura = document.querySelector('input[name="factura"]:checked')?.value;
+
+      if (!dia || !mes || !companyID || !entorno || !factura) {
+        resultadoDiv.textContent = '⚠️ Debes completar todos los campos.';
+        return;
+      }
+
+      const url = `http://omniserver.nubehit.com:3335/syncIntercompanySilemaByDate?companyID=${companyID}&day=${dia}&month=${mes}&anio=${anio}&entorno=${entorno}&factura=${factura}`;
+
+      try {
+        boton.disabled = true;
+        boton.textContent = 'Enviando...';
+        resultadoDiv.textContent = 'Procesando...';
+
+        const response = await fetch(url);
+        const text = await response.text();
+        resultadoDiv.textContent = `${text}`;
+      } catch (error) {
+        resultadoDiv.textContent = '❌ Error: ' + error.message;
+      } finally {
+        boton.disabled = false;
+        boton.textContent = 'Enviar';
+      }
+    }
+
+    async function enviarVentasCierres() {
+      const diaInicio = document.getElementById('diaInicio').value.padStart(2, '0');
+      const diaFin = document.getElementById('diaFin').value.padStart(2, '0');
+      const mes = document.getElementById('mes2').value.padStart(2, '0');
+      const anio = document.getElementById('anio2').value.padStart(4, '0');
+      const turno = document.getElementById('turno').value;
+      const tiendaFilapena = document.getElementById('tiendaFilapena').value.trim();
+      const companyID2 = document.getElementById('companyID2').value.trim();
+      const entorno = document.getElementById('entornoVC').value.trim();
+      const boton = document.getElementById('btnVentas');
+      const resultadoDiv = document.getElementById('resultadoVentas');
+
+      if (!diaInicio || !diaFin || !mes || !companyID2 || !entorno) {
+        resultadoDiv.textContent = '⚠️ Debes completar todos los campos.';
+        return;
+      }
+
+      const url = `http://omniserver.nubehit.com:3335/syncSilemaDate?diaInicio=${diaInicio}&diaFin=${diaFin}&mes=${mes}&anio=${anio}&turno=${turno}&tiendas=${tiendaFilapena}&companyID=${companyID2}&entorno=${entorno}&empresa=filapena`;
+
+      try {
+        boton.disabled = true;
+        boton.textContent = 'Enviando...';
+        resultadoDiv.textContent = 'Procesando...';
+
+        const response = await fetch(url);
+        const text = await response.text();
+        resultadoDiv.textContent = `${text}`;
+      } catch (error) {
+        resultadoDiv.textContent = '❌ Error: ' + error.message;
+      } finally {
+        boton.disabled = false;
+        boton.textContent = 'Enviar';
+      }
+    }
+
+    async function enviarVentasCierresImeMil() {
+      const diaInicio = document.getElementById('diaInicio1').value.padStart(2, '0');
+      const diaFin = document.getElementById('diaFin1').value.padStart(2, '0');
+      const mes = document.getElementById('mes3').value.padStart(2, '0');
+      const anio = document.getElementById('anio3').value.padStart(4, '0');
+      const turno = document.getElementById('turno1').value;
+      const tiendaImeMil = document.getElementById('tiendaImeMil').value.trim();
+      const companyID3 = document.getElementById('companyID3').value.trim();
+      const entorno = document.getElementById('entornoVCI').value.trim();
+      const boton = document.getElementById('btnVentasImeMil');
+      const resultadoDiv = document.getElementById('resultadoVentasImeMil');
+
+      if (!diaInicio || !diaFin || !mes || !companyID3 || !entorno) {
+        resultadoDiv.textContent = '⚠️ Debes completar todos los campos.';
+        return;
+      }
+
+      const url = `http://omniserver.nubehit.com:3335/syncSilemaDate?diaInicio=${diaInicio}&diaFin=${diaFin}&mes=${mes}&anio=${anio}&turno=${turno}&tiendas=${tiendaImeMil}&companyID=${companyID3}&entorno=${entorno}&empresa=imeMil`;
+
+      try {
+        boton.disabled = true;
+        boton.textContent = 'Enviando...';
+        resultadoDiv.textContent = 'Procesando...';
+
+        const response = await fetch(url);
+        const text = await response.text();
+        resultadoDiv.textContent = `${text}`;
+      } catch (error) {
+        resultadoDiv.textContent = '❌ Error: ' + error.message;
+      } finally {
+        boton.disabled = false;
+        boton.textContent = 'Enviar';
+      }
+    }
+
+    // Mostrar/ocultar la chuleta
+    document.getElementById('chuletaBtn').addEventListener('click', () => {
+      const contenido = document.getElementById('contenido');
+      contenido.classList.toggle('oculto');
+    });
+  </script>
+</body>
+
+</html>

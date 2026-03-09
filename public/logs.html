@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Pantalla de Logs</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    #filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    input {
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 0.9rem;
+    }
+
+    button {
+      padding: 6px 15px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      display: block;
+      max-height: 70vh;
+      overflow-y: auto;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: #007bff;
+      color: white;
+      z-index: 1;
+    }
+
+    th,
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #e0e0e0;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    tr.info {
+      background-color: #e6f0ff;
+    }
+
+    tr.warning {
+      background-color: #fff9e6;
+    }
+
+    tr.error {
+      background-color: #ffe6e6;
+    }
+
+    tr:hover {
+      background-color: #d1ebff;
+    }
+
+    table tbody {
+      display: block;
+    }
+
+    table thead,
+    table tbody tr {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    #pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 15px;
+      gap: 10px;
+    }
+
+    #pagination button {
+      padding: 5px 10px;
+      border: 1px solid #ccc;
+      background: white;
+      color: black;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #pagination button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #page-info {
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    .col-tienda {
+      width: 5%;
+    }
+
+    .col-fecha {
+      width: 8%;
+    }
+
+    .col-turno {
+      width: 3%;
+    }
+
+    .col-tipo {
+      width: 6%;
+    }
+
+    .col-codigo {
+      width: 10%;
+    }
+
+    .col-mensaje {
+      width: 33%;
+    }
+
+    /* columna más ancha */
+    .col-origen {
+      width: 8%;
+    }
+
+    .col-sync {
+      width: 10%;
+    }
+
+    .col-company {
+      width: 7%;
+    }
+
+    .col-entorno {
+      width: 10%;
+    }
+
+    #logs-table td {
+      white-space: normal;
+      word-break: break-word;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Visor de Logs</h1>
+
+  <div id="filters">
+    <input type="text" id="filter-tienda" placeholder="Filtrar por tienda" />
+    <input type="text" id="filter-fecha" placeholder="Filtrar por fecha (dd-mm-yyyy)" />
+    <input type="text" id="filter-turno" placeholder="Filtrar por turno" />
+    <input type="text" id="filter-tipo" placeholder="Filtrar por tipo" />
+    <input type="text" id="filter-codigo" placeholder="Filtrar por código" />
+    <input type="text" id="filter-mensaje" placeholder="Filtrar por mensaje" />
+    <input type="text" id="filter-origen" placeholder="Filtrar por origen" />
+    <button onclick="loadLogs()">Actualizar</button>
+  </div>
+
+  <table id="logs-table">
+    <thead>
+      <tr>
+        <th class="col-tienda">Tienda</th>
+        <th class="col-fecha">Fecha ventas</th>
+        <th class="col-turno">Turno</th>
+        <th class="col-tipo">Tipo</th>
+        <th class="col-codigo">Código</th>
+        <th class="col-mensaje">Mensaje</th>
+        <th class="col-origen">Origen</th>
+        <th class="col-sync">Sincronización</th>
+        <th class="col-company">Company</th>
+        <th class="col-entorno">Entorno</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="pagination">
+    <button id="prev-page" class="pagination-button">« Anterior</button>
+    <span id="page-info" class="page-info"></span>
+    <button id="next-page" class="pagination-button">Siguiente »</button>
+  </div>
+
+  <script>
+    const PAGE_SIZE = 25;
+    let allLogs = [];
+    let filteredLogs = [];
+    let currentPage = 1;
+
+    function formatFecha(fecha) {
+      if (!fecha) return '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+        const [yyyy, mm, dd] = fecha.split('-');
+        return `${dd}-${mm}-${yyyy}`;
+      } else if (/^\d{2}-\d{2}-\d{4}$/.test(fecha)) {
+        return fecha;
+      }
+      return fecha;
+    }
+
+    // 🔹 Convierte fecha + timestamp a Date para ordenar correctamente
+    function parseTimestamp(ts) {
+      if (!ts) return new Date(0);
+
+      // Extrae fecha y hora del formato "dd/mm/yyyy, H:MM:SS"
+      const parts = ts.split(','); // ["17/12/2025", " 9:30:29"]
+      if (parts.length !== 2) return new Date(0);
+
+      const [fecha, hora] = parts.map(p => p.trim());
+      const [dia, mes, año] = fecha.split('/');
+      const [hh, mm, ss] = hora.split(':');
+
+      // Crear Date ISO
+      const parsed = new Date(`${año}-${mes}-${dia}T${hh.padStart(2, '0')}:${mm}:${ss}`);
+      return isNaN(parsed.getTime()) ? new Date(0) : parsed;
+    }
+
+
+    async function loadLogs() {
+      try {
+        const response = await fetch('/helpers');
+        allLogs = await response.json();
+        applyFilters();
+      } catch (err) {
+        console.error('Error cargando logs:', err);
+      }
+    }
+
+    function applyFilters() {
+      const tiendaFilter = (document.getElementById('filter-tienda').value || '').toLowerCase();
+      const fechaFilter = (document.getElementById('filter-fecha').value || '').toLowerCase();
+      const turnoFilter = (document.getElementById('filter-turno').value || '').toLowerCase();
+      const tipoFilter = (document.getElementById('filter-tipo').value || '').toLowerCase();
+      const codigoFilter = (document.getElementById('filter-codigo').value || '').toLowerCase();
+      const mensajeFilter = (document.getElementById('filter-mensaje').value || '').toLowerCase();
+      const origenFilter = (document.getElementById('filter-origen').value || '').toLowerCase();
+
+      filteredLogs = allLogs.filter((log) => {
+        return (
+          (!tiendaFilter ||
+            String(log.tienda || '')
+              .toLowerCase()
+              .includes(tiendaFilter)) &&
+          (!fechaFilter ||
+            formatFecha(String(log.fecha || ''))
+              .toLowerCase()
+              .includes(fechaFilter)) &&
+          (!turnoFilter ||
+            String(log.turno || '')
+              .toLowerCase()
+              .includes(turnoFilter)) &&
+          (!tipoFilter ||
+            String(log.tipo || '')
+              .toLowerCase()
+              .includes(tipoFilter)) &&
+          (!codigoFilter ||
+            String(log.codigo || '')
+              .toLowerCase()
+              .includes(codigoFilter)) &&
+          (!mensajeFilter ||
+            String(log.mensaje || '')
+              .toLowerCase()
+              .includes(mensajeFilter)) &&
+          (!origenFilter ||
+            String(log.origen || '')
+              .toLowerCase()
+              .includes(origenFilter))
+        );
+      });
+
+      // 🔹 Ordenar por timestamp más reciente primero
+      filteredLogs.sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
+
+      currentPage = 1;
+      renderTable();
+      updatePagination();
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector('#logs-table tbody');
+      tbody.innerHTML = '';
+
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const end = start + PAGE_SIZE;
+      const pageLogs = filteredLogs.slice(start, end);
+
+      const fragment = document.createDocumentFragment();
+
+      pageLogs.forEach((log) => {
+        const tr = document.createElement('tr');
+        tr.className = String(log.tipo || '').toLowerCase();
+        tr.innerHTML = `
+          <td class="col-tienda">${log.tienda || ''}</td>
+          <td class="col-fecha">${formatFecha(log.fecha) || ''}</td>
+          <td class="col-turno">${log.turno || ''}</td>
+          <td class="col-tipo">${log.tipo || ''}</td>
+          <td class="col-codigo">${log.codigo || ''}</td>
+          <td class="col-mensaje">${log.mensaje || ''}</td>
+          <td class="col-origen">${log.origen || ''}</td>
+          <td class="col-sync">${log.timestamp || ''}</td>
+          <td class="col-company">${log.companyID || ''}</td>
+          <td class="col-entorno">${log.entorno || ''}</td>
+        `;
+        fragment.appendChild(tr);
+      });
+
+      tbody.appendChild(fragment);
+      document.querySelector('#logs-table').scrollTop = 0; // vuelve al inicio al cambiar de página
+    }
+
+    function updatePagination() {
+      const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
+      const prevBtn = document.getElementById('prev-page');
+      const nextBtn = document.getElementById('next-page');
+      const pageInfo = document.getElementById('page-info');
+
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+
+      pageInfo.textContent = `Página ${currentPage} de ${totalPages || 1}`;
+    }
+
+    document.getElementById('prev-page').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+        updatePagination();
+      }
+    });
+
+    document.getElementById('next-page').addEventListener('click', () => {
+      const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
+        updatePagination();
+      }
+    });
+
+    loadLogs();
+  </script>
+</body>
+
+</html>
