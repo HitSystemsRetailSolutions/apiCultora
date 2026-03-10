@@ -275,6 +275,10 @@
           Filapeña S.L.
           <span class="uuid">(86ee4d52-801e-ef11-9f88-0022489dfd5d)</span>
         </li>
+        <li>
+          SILEMA BCN, S.L.U.
+          <span class="uuid">(f81d2993-7e1e-ef11-9f88-000d3ab5a7ff)</span>
+        </li>
       </ul>
     </section>
     <hr style="margin: 24px 0; border: none; border-top: 2px dashed #bbb;">
@@ -334,7 +338,7 @@
         return;
       }
 
-      const url = `http://omniserver.nubehit.com:3335/syncIntercompanySilemaByDate?companyID=${companyID}&day=${dia}&month=${mes}&anio=${anio}&entorno=${entorno}&factura=${factura}`;
+      const url = `https://apicultora.nubehit.com/syncIntercompanySilemaByDate?companyID=${companyID}&day=${dia}&month=${mes}&anio=${anio}&entorno=${entorno}&factura=${factura}`;
 
       try {
         boton.disabled = true;
@@ -369,7 +373,7 @@
         return;
       }
 
-      const url = `http://omniserver.nubehit.com:3335/syncSilemaDate?diaInicio=${diaInicio}&diaFin=${diaFin}&mes=${mes}&anio=${anio}&turno=${turno}&tiendas=${tiendaFilapena}&companyID=${companyID2}&entorno=${entorno}&empresa=filapena`;
+      const url = `https://apicultora.nubehit.com/syncSilemaDate?diaInicio=${diaInicio}&diaFin=${diaFin}&mes=${mes}&anio=${anio}&turno=${turno}&tiendas=${tiendaFilapena}&companyID=${companyID2}&entorno=${entorno}&empresa=filapena`;
 
       try {
         boton.disabled = true;
@@ -404,7 +408,7 @@
         return;
       }
 
-      const url = `http://omniserver.nubehit.com:3335/syncSilemaDate?diaInicio=${diaInicio}&diaFin=${diaFin}&mes=${mes}&anio=${anio}&turno=${turno}&tiendas=${tiendaImeMil}&companyID=${companyID3}&entorno=${entorno}&empresa=imeMil`;
+      const url = `https://apicultora.nubehit.com/syncSilemaDate?diaInicio=${diaInicio}&diaFin=${diaFin}&mes=${mes}&anio=${anio}&turno=${turno}&tiendas=${tiendaImeMil}&companyID=${companyID3}&entorno=${entorno}&empresa=imeMil`;
 
       try {
         boton.disabled = true;
