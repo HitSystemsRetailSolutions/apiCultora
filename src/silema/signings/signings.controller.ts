@@ -7,16 +7,10 @@ import { signingsService } from './signings.service';
 export class signingsController {
   constructor(private readonly signingsService: signingsService) {}
 
-  @Get('syncsignings')
-  async signings(
-    @Query('companyNAME') comapanyNAME: string,
-    @Query('database') database: string,
-    @Query('client_id') client_id: string,
-    @Query('client_secret') client_secret: string,
-    @Query('tenant') tenant: string,
-    @Query('entorno') entorno: string,
-  ) {
-    let res = await this.signingsService.syncSignings(comapanyNAME, database, client_id, client_secret, tenant, entorno);
+  @Post('syncsignings')
+  async signings(@Body() params: any) {
+    const { companyNAME, database, client_id, client_secret, tenant, entorno } = params;
+    let res = await this.signingsService.syncSignings(companyNAME, database, client_id, client_secret, tenant, entorno);
     if (res == true) return 'Se han sincronizado los fichajes correctamente';
     else return 'Ha habido un error al sincronizar los fichajes';
   }

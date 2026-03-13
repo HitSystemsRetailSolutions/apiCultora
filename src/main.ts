@@ -26,24 +26,31 @@ const mqttOptions = {
 };
 
 // Crear un cliente MQTT
-const client = mqtt.connect(mqttOptions);
+let client;
+try {
+  if (!process.env.MQTT_HOST) {
+    console.warn('⚠️ MQTT_HOST no está definido en las variables de entorno. El cliente MQTT podría no conectar.');
+  }
+  client = mqtt.connect(mqttOptions);
 
-// Manejar evento de conexión
-client.on('connect', function () {
-  console.log('Conectado al broker MQTT');
+  // Manejar evento de conexión
+  client.on('connect', function () {
+    console.log('✅ Conectado al broker MQTT');
 
-  // Suscribirse a un tema
-  let tema = '/Hit/Serveis/Apicultor';
-  // let tema = '/Testinggg/Hit/Serveis/Apicultor';
-  client.subscribe(tema, function (err) {
-    if (err) {
-      console.error('Error al suscribirse al tema', err);
-    } else {
-      console.log('Suscripción exitosa al tema', tema);
-    }
+    // Suscribirse a un tema
+    let tema = '/Hit/Serveis/Apicultor';
+    // let tema = '/Testinggg/Hit/Serveis/Apicultor';
+    client.subscribe(tema, function (err) {
+      if (err) {
+        console.error('❌ Error al suscribirse al tema', err);
+      } else {
+        console.log('✅ Suscripción exitosa al tema', tema);
+      }
+    });
   });
-});
-
+} catch (error) {
+  console.error('🔥 Error crítico al intentar inicializar el cliente MQTT', error);
+}
 // Manejar mensajes recibidos
 client.on('message', async function (topic, message) {
   if (debug) {
@@ -117,6 +124,7 @@ client.on('message', async function (topic, message) {
           await callSync('syncLocationSilema', { companyID, database, client_id, client_secret, tenant, entorno }, '✅ Sincronización de almacenes Silema acabada');
           await callSync('syncVendorsSilema', { companyID, database, client_id, client_secret, tenant, entorno }, '✅ Sincronización de proveedores Silema acabada');
         },
+        runSincroIntercompanyCron: () => callSync('cronIntercompanySync', { companyID, database, client_id, client_secret, tenant, entorno }, '✅ Job de revisión periódica de Intercompany finalizado'),
       };
 
       // Ejecutar acción según el mensaje
@@ -150,9 +158,7 @@ function isValidCompanyID(companyID) {
 async function callSync(endpoint, params, successMsg) {
   console.log(`🔄 Llamando a la función de sincronización: ${endpoint}`);
   try {
-    await axios.get(endpoint, {
-      params
-    });
+    await axios.post(endpoint, params);
     console.log(successMsg);
   } catch (error) {
     console.error(`Error al sincronizar en ${endpoint}: ${error.message}`);

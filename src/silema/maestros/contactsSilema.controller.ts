@@ -7,15 +7,9 @@ import fs = require('fs');
 export class contactsSilemaController {
   constructor(private readonly contactsSilemaService: contactsSilemaService) {}
 
-  @Get('syncContactsSilema')
-  async syncContactsSilema(
-    @Query('companyID') companyID: string,
-    @Query('database') database: string,
-    @Query('client_id') client_id: string,
-    @Query('client_secret') client_secret: string,
-    @Query('tenant') tenant: string,
-    @Query('entorno') entorno: string,
-  ) {
+  @Post('syncContactsSilema')
+  async syncContactsSilema(@Body() params: any) {
+    const { companyID, database, client_id, client_secret, tenant, entorno } = params;
     let res = await this.contactsSilemaService.syncContactsSilema(companyID, database, client_id, client_secret, tenant, entorno);
     if (res == true) return 'Se han sincronizado los contacts correctamente';
     else return 'Ha habido un error al sincronizar los contacts';
