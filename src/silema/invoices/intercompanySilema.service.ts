@@ -314,6 +314,10 @@ export class intercompanySilemaService {
       }
     } else {
       console.log(`Ya existe la ${tipo}: ${salesData.no}`);
+      if (database && idFactura) {
+        await this.deleteControlTableEntry(database, idFactura);
+        console.log(`🗑️ Registro eliminado de recordsFacturacioBC para la factura ${idFactura}`);
+      }
     }
   }
 
