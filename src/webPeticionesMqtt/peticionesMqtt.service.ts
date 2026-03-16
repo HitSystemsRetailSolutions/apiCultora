@@ -130,8 +130,8 @@ export class peticionesMqttService {
       `;
 
       const inputs = [
-        { name: 'start', type: sql.DateTime, value: startMonday.toDate() },
-        { name: 'end', type: sql.DateTime, value: endMonday.toDate() }
+        { name: 'start', type: sql.NVarChar, value: startMonday.format('YYYY-MM-DD HH:mm:ss') },
+        { name: 'end', type: sql.NVarChar, value: endMonday.format('YYYY-MM-DD HH:mm:ss') }
       ];
 
       await this.sql.runSql(queryInsert, database, inputs);
