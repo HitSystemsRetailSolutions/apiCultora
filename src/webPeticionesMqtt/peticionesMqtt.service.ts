@@ -96,11 +96,15 @@ export class peticionesMqttService {
   async cronIntercompanySync(params: any) {
     const { companyID, database, entorno, client_id, client_secret, tenant } = params;
     const dayjs = require('dayjs');
+    const utc = require('dayjs/plugin/utc');
+    const timezone = require('dayjs/plugin/timezone');
+    dayjs.extend(utc);
+    dayjs.extend(timezone);
 
     // 1. Calcular rango de fechas (Lunes anterior 10:00 a este Lunes 10:00)
     // Usamos .day(1) para asegurar que sea Lunes independientemente del locale del servidor
-    let endMonday = dayjs().day(1).hour(10).minute(0).second(0); // Lunes de esta semana 10:00
-    if (dayjs().isBefore(endMonday)) {
+    let endMonday = dayjs().tz('Europe/Madrid').day(1).hour(10).minute(0).second(0); // Lunes de esta semana 10:00
+    if (dayjs().tz('Europe/Madrid').isBefore(endMonday)) {
       endMonday = endMonday.subtract(1, 'week');
     }
     const startMonday = endMonday.subtract(1, 'week');
