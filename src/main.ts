@@ -38,13 +38,16 @@ try {
     console.log('✅ Conectado al broker MQTT');
 
     // Suscribirse a un tema
-    let tema = '/Hit/Serveis/Apicultor';
+    const tema = [
+      '/Hit/Serveis/Apicultor',
+      '/Hit/Serveis/Apicultora'
+    ];
     // let tema = '/Testinggg/Hit/Serveis/Apicultor';
     client.subscribe(tema, function (err) {
       if (err) {
-        console.error('❌ Error al suscribirse al tema', err);
+        console.error('❌ Error al suscribirse a los temas:', tema, err);
       } else {
-        console.log('✅ Suscripción exitosa al tema', tema);
+        console.log('✅ Suscripción exitosa a los temas:', tema);
       }
     });
   });
@@ -146,7 +149,15 @@ client.on('message', async function (topic, message) {
 
 // Manejar errores
 client.on('error', function (error) {
-  console.error('Error en el cliente MQTT:', error);
+  console.error('❌ Error en el cliente MQTT:', error);
+});
+
+client.on('reconnect', () => {
+  console.log('🔄 Reintentando conexión MQTT...');
+});
+
+client.on('offline', () => {
+  console.log('🔌 Cliente MQTT offline');
 });
 
 function isValidCompanyID(companyID) {
