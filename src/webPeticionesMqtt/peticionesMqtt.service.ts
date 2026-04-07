@@ -121,7 +121,7 @@ export class peticionesMqttService {
 
       const queryInsert = `
         INSERT INTO RecordsFacturacioBC (DataEmissio, Emissor, TipusFactura, IdFactura, EstatTraspas, TimeStamp)
-        SELECT DataEmissio, EmpresaCodi, 'Intercompany', IdFactura, 0, GETDATE()
+        SELECT DataFactura, EmpresaCodi, 'Intercompany', IdFactura, 0, GETDATE()
         FROM ${tablaFactu}
         WHERE EmpresaCodi = 9 
           AND DataEmissio >= @start 
