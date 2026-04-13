@@ -338,14 +338,27 @@
         return;
       }
 
-      const url = `https://apicultora.nubehit.com/syncIntercompanySilemaByDate?companyID=${companyID}&day=${dia}&month=${mes}&anio=${anio}&entorno=${entorno}&factura=${factura}`;
+      const url = `https://apicultora.nubehit.com/syncIntercompanySilemaByDate`;
 
       try {
         boton.disabled = true;
         boton.textContent = 'Enviando...';
         resultadoDiv.textContent = 'Procesando...';
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            companyID,
+            day: dia,
+            month: mes,
+            anio,
+            entorno,
+            factura
+          })
+        });
         const text = await response.text();
         resultadoDiv.textContent = `${text}`;
       } catch (error) {
@@ -373,14 +386,30 @@
         return;
       }
 
-      const url = `https://apicultora.nubehit.com/syncSilemaDate?diaInicio=${diaInicio}&diaFin=${diaFin}&mes=${mes}&anio=${anio}&turno=${turno}&tiendas=${tiendaFilapena}&companyID=${companyID2}&entorno=${entorno}&empresa=filapena`;
+      const url = `https://apicultora.nubehit.com/syncSilemaDate`;
 
       try {
         boton.disabled = true;
         boton.textContent = 'Enviando...';
         resultadoDiv.textContent = 'Procesando...';
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            diaInicio,
+            diaFin,
+            mes,
+            anio,
+            turno,
+            tiendas: tiendaFilapena,
+            companyID: companyID2,
+            entorno,
+            empresa: 'filapena'
+          })
+        });
         const text = await response.text();
         resultadoDiv.textContent = `${text}`;
       } catch (error) {
@@ -408,14 +437,30 @@
         return;
       }
 
-      const url = `https://apicultora.nubehit.com/syncSilemaDate?diaInicio=${diaInicio}&diaFin=${diaFin}&mes=${mes}&anio=${anio}&turno=${turno}&tiendas=${tiendaImeMil}&companyID=${companyID3}&entorno=${entorno}&empresa=imeMil`;
+      const url = `https://apicultora.nubehit.com/syncSilemaDate`;
 
       try {
         boton.disabled = true;
         boton.textContent = 'Enviando...';
         resultadoDiv.textContent = 'Procesando...';
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            diaInicio,
+            diaFin,
+            mes,
+            anio,
+            turno,
+            tiendas: tiendaImeMil,
+            companyID: companyID3,
+            entorno,
+            empresa: 'imeMil'
+          })
+        });
         const text = await response.text();
         resultadoDiv.textContent = `${text}`;
       } catch (error) {
