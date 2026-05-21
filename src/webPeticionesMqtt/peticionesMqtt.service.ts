@@ -51,7 +51,7 @@ export class peticionesMqttService {
       client_secret: process.env.tenaClientSecret
     }
     console.log(`Enviando mensaje MQTT: ${JSON.stringify(message)}`);
-    this.client.publish('/Hit/Serveis/Apicultor', JSON.stringify(message), { qos: 1 });
+    this.client.publish('/Hit/Serveis/Apicultora', JSON.stringify(message), { qos: 1 });
     return true;
 
   }
@@ -88,7 +88,7 @@ export class peticionesMqttService {
       client_secret: process.env.tenaClientSecret
     }
     console.log(`Enviando mensaje MQTT cierre: ${JSON.stringify(message)}`);
-    this.client.publish('/Hit/Serveis/Apicultor', JSON.stringify(message), { qos: 1 });
+    this.client.publish('/Hit/Serveis/Apicultora', JSON.stringify(message), { qos: 1 });
     return true;
 
   }
@@ -173,7 +173,7 @@ export class peticionesMqttService {
       };
 
       console.log(`Disparando sincronización Intercompany para el mes ${month} (${groups[month].length} facturas)`);
-      this.client.publish('/Hit/Serveis/Apicultor', JSON.stringify(syncMsg), { qos: 1 });
+      this.client.publish('/Hit/Serveis/Apicultora', JSON.stringify(syncMsg), { qos: 1 });
     }
 
     return true;
@@ -254,7 +254,7 @@ export class peticionesMqttService {
       };
 
       console.log(`Disparando sincronización Intercompany (primer martes) para el mes ${m} (${groups[m].length} facturas)`);
-      this.client.publish('/Hit/Serveis/Apicultor', JSON.stringify(syncMsg), { qos: 1 });
+      this.client.publish('/Hit/Serveis/Apicultora', JSON.stringify(syncMsg), { qos: 1 });
     }
 
     return true;
