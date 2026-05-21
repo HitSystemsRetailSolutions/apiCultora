@@ -178,4 +178,85 @@ export class peticionesMqttService {
 
     return true;
   }
+
+  async cronIntercompanyFirstTuesdaySync(params: any) {
+    const { companyID, database, entorno, client_id, client_secret, tenant } = params;
+    const dayjs = require('dayjs');
+    const utc = require('dayjs/plugin/utc');
+    const timezone = require('dayjs/plugin/timezone');
+    dayjs.extend(utc);
+    dayjs.extend(timezone);
+
+    // Calcular primer martes del mes en Europe/Madrid
+    const now = dayjs().tz('Europe/Madrid');
+    let firstOfMonth = now.startOf('month');
+    let firstTuesday = firstOfMonth;
+    while (firstTuesday.day() !== 2) {
+      firstTuesday = firstTuesday.add(1, 'day');
+    }
+
+    const startDay = firstTuesday.hour(0).minute(0).second(0);
+    const endDay = startDay.add(1, 'day');
+
+    console.log(`Sincronizando Intercompany del primer martes: ${startDay.format()} - ${endDay.format()}`);
+
+    // Insertar las facturas de ese día en RecordsFacturacioBC (si no existen)
+    const month = startDay.format('YYYY-MM');
+    const tablaFactu = `[facturacio_${month}_iva]`;
+
+    const firstTuesdayDate = startDay.format('DD');
+    const queryInsert = `
+      INSERT INTO RecordsFacturacioBC (DataEmissio, Emissor, TipusFactura, IdFactura, EstatTraspas, TimeStamp)
+      SELECT DataFactura, EmpresaCodi, 'Intercompany', IdFactura, 0, GETDATE()
+      FROM ${tablaFactu}
+      WHERE EmpresaCodi = 9
+        AND day(DataEmissio) = @date
+        AND IdFactura NOT IN (SELECT IdFactura FROM RecordsFacturacioBC)
+    `;
+    const inputs = [
+      { name: 'date', type: sql.NVarChar, value: firstTuesdayDate }
+    ];
+    console.log(`queryInsert: ${queryInsert}  inputs: ${JSON.stringify(inputs)}`);
+    await this.sql.runSql(queryInsert, database, inputs);
+
+    // Consultar las pendientes SOLO de ese día
+    const queryPendientes = `
+      SELECT IdFactura, DataEmissio 
+      FROM RecordsFacturacioBC 
+      WHERE TipusFactura = 'Intercompany' AND EstatTraspas = 0
+    `;
+    const pendientes = await this.sql.runSql(queryPendientes, database, inputs);
+
+    if (!pendientes || pendientes.recordset.length === 0) {
+      console.log('No hay facturas Intercompany pendientes para el primer martes.');
+      return true;
+    }
+
+    // Agrupar por mes (por si acaso) y publicar mensajes de sincronización
+    const groups: { [key: string]: string[] } = {};
+    for (const row of pendientes.recordset) {
+      const monthStr = dayjs(row.DataEmissio).format('YYYY-MM');
+      if (!groups[monthStr]) groups[monthStr] = [];
+      groups[monthStr].push(row.IdFactura);
+    }
+
+    for (const m in groups) {
+      const syncMsg = {
+        msg: "silemaIntercompany",
+        idFactura: groups[m],
+        tabla: m,
+        database: database,
+        tenant: tenant || process.env.tenaTenant,
+        companyID: companyID,
+        entorno: entorno,
+        client_id: client_id || process.env.tenaClientId,
+        client_secret: client_secret || process.env.tenaClientSecret
+      };
+
+      console.log(`Disparando sincronización Intercompany (primer martes) para el mes ${m} (${groups[m].length} facturas)`);
+      this.client.publish('/Hit/Serveis/Apicultor', JSON.stringify(syncMsg), { qos: 1 });
+    }
+
+    return true;
+  }
 }

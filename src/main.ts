@@ -128,6 +128,7 @@ client.on('message', async function (topic, message) {
           await callSync('syncVendorsSilema', { companyID, database, client_id, client_secret, tenant, entorno }, '✅ Sincronización de proveedores Silema acabada');
         },
         runSincroIntercompanyCron: () => callSync('cronIntercompanySync', { companyID, database, client_id, client_secret, tenant, entorno }, '✅ Job de revisión periódica de Intercompany finalizado'),
+        intercompanyTuesdayCron: () => callSync('cronIntercompanyFirstTuesdaySync', { companyID, database, client_id, client_secret, tenant, entorno }, '✅ Job de sincronización Intercompany del primer martes finalizado'),
       };
 
       // Ejecutar acción según el mensaje
@@ -172,7 +173,8 @@ async function callSync(endpoint, params, successMsg) {
     await axios.post(endpoint, params);
     console.log(successMsg);
   } catch (error) {
-    console.error(`Error al sincronizar en ${endpoint}: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Error al sincronizar en ${endpoint}: ${errorMessage}`);
   }
 }
 

@@ -27,4 +27,11 @@ export class peticionesMqttController {
     if (res == true) return 'Proceso de revisión Intercompany finalizado';
     else return 'Error en el proceso de revisión Intercompany';
   }
+
+  @Post('cronIntercompanyFirstTuesdaySync')
+  async cronIntercompanyFirstTuesdaySync(@Body() params: any) {
+    let res = await this.peticionesMqttService.cronIntercompanyFirstTuesdaySync(params);
+    if (res == true) return 'Proceso de revisión Intercompany del primer martes finalizado';
+    else return 'Error en el proceso de revisión Intercompany del primer martes';
+  }
 }
