@@ -216,7 +216,7 @@ export class peticionesMqttService {
     const inputs = [
       { name: 'date', type: sql.NVarChar, value: firstTuesdayDate }
     ];
-    console.log(`queryInsert: ${queryInsert}  inputs: ${JSON.stringify(inputs)}`);
+
     await this.sql.runSql(queryInsert, database, inputs);
 
     // Consultar las pendientes SOLO de ese día
