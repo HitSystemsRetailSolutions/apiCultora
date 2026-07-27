@@ -63,11 +63,23 @@ export class checksService {
         // ===========================
         // SALTOS DE TICKET
         // ===========================
+        const queryUnion = `
+            SELECT * FROM [v_venut_${year}-${month}]
+            UNION ALL
+            SELECT * FROM [v_rectificats_${year}-${month}]
+            UNION ALL
+            SELECT * FROM [v_anulats_${year}-${month}]
+        `;
+
         const tickets = await this.sql.runSql(
             `SELECT MIN(num_tick) AS primerTick, MAX(num_tick) AS ultimTick
-                FROM [v_venut_${year}-${month}]
-                WHERE botiga = ${botiga} AND DAY(Data) = ${day}
-                AND CONVERT(Time, Data) BETWEEN '${horaInicio}' AND '${horaFin}'`, database)
+                FROM (
+                    ${queryUnion}
+                ) v
+            WHERE botiga = ${botiga} AND DAY(Data) = ${day}
+            AND CONVERT(Time, Data) BETWEEN '${horaInicio}' AND '${horaFin}'`,
+            database
+        );
 
         const primerTick = tickets?.recordset[0]?.primerTick;
         const ultimTick = tickets?.recordset[0]?.ultimTick;
@@ -75,12 +87,11 @@ export class checksService {
         if (primerTick && ultimTick) {
             const countRes = await this.sql.runSql(
                 `SELECT COUNT(DISTINCT num_tick) AS nTicks
-                    FROM (
-                        SELECT * FROM [v_venut_${year}-${month}]
-                        UNION ALL
-                        SELECT * FROM [V_Anulats_${year}-${month}]
-                    ) v
-                    WHERE botiga = ${botiga} AND num_tick BETWEEN ${primerTick} AND ${ultimTick}`, database
+                FROM (
+                    ${queryUnion}
+                ) v
+                WHERE botiga = ${botiga} AND num_tick BETWEEN ${primerTick} AND ${ultimTick}`,
+                database
             );
 
             const nTicks = countRes.recordset[0]?.nTicks ?? 0;
