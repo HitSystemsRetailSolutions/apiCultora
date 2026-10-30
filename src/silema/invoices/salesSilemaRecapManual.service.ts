@@ -166,6 +166,8 @@ export class salesSilemaRecapManualService {
         throw new Error('No se encontraron facturas en la base de datos.');
       }
 
+      const ticketSignatures = this.getSourceTicketSignatures(datosPlanos);
+
       //console.log(datosPlanos.length);
 
       let x = datosPlanos[0];
@@ -262,10 +264,10 @@ export class salesSilemaRecapManualService {
       }
       // console.log('factura:', salesData);
       if (!manual) {
-        await this.postToApi(tipo, salesData, tenant, entorno, companyID, token, database, idFactura);
+        await this.postToApi(tipo, salesData, tenant, entorno, companyID, token, database, idFactura, ticketSignatures);
         return true;
       } else {
-        await this.postToApi(tipo, salesData, tenant, entorno, companyID, token);
+        await this.postToApi(tipo, salesData, tenant, entorno, companyID, token, undefined, undefined, ticketSignatures);
       }
 
       // ---------------------------------Abono recap manual---------------------------------
@@ -324,7 +326,7 @@ export class salesSilemaRecapManualService {
         salesData.salesLinesBuffer.push(salesLine);
       }
       // console.log('abono', salesData);
-      await this.postToApi(tipo, salesData, tenant, entorno, companyID, token, database, idFactura);
+      await this.postToApi(tipo, salesData, tenant, entorno, companyID, token, database, idFactura, ticketSignatures);
 
       return true;
     } catch (error) {
@@ -350,12 +352,11 @@ export class salesSilemaRecapManualService {
     }
   }
 
-  async postToApi(tipo, salesData, tenant, entorno, companyID, token, database?: string, idFactura?: string) {
+  async postToApi(tipo, salesData, tenant, entorno, companyID, token, database?: string, idFactura?: string, ticketSignatures: string[] = []) {
     if (salesData.no.length > 20) salesData.no = salesData.no.slice(-20);
     if (salesData.locationCode.length > 10) salesData.locationCode = salesData.locationCode.slice(-10);
     if (salesData.shipToCode.length > 10) salesData.shipToCode = salesData.shipToCode.slice(-10);
-    let url1 = `${process.env.baseURL}/v2.0/${tenant}/${entorno}/api/abast/hitIntegration/v2.0/companies(${companyID})/salesHeadersBuffer?$filter=documentType eq '${salesData.documentType}' and 
-    vatRegistrationNo eq '${salesData.vatRegistrationNo}' and amountExclVat eq ${salesData.amountExclVat} and postingDate eq ${salesData.postingDate} and locationCode eq '${salesData.locationCode}'`;
+    let url1 = `${process.env.baseURL}/v2.0/${tenant}/${entorno}/api/abast/hitIntegration/v2.0/companies(${companyID})/salesHeadersBuffer?$expand=salesLinesBuffer&$filter=documentType eq '${salesData.documentType}' and vatRegistrationNo eq '${salesData.vatRegistrationNo}' and amountExclVat eq ${salesData.amountExclVat} and postingDate eq ${salesData.postingDate} and locationCode eq '${salesData.locationCode}'`;
 
     //console.log(url1);
     let resGet1 = await axios
@@ -371,7 +372,15 @@ export class salesSilemaRecapManualService {
       });
 
     if (!resGet1.data) throw new Error('Failed to get factura line');
-    if (resGet1.data.value.length === 0) {
+
+    const matchingInvoices = resGet1.data.value.filter(invoice =>
+      this.haveSameTickets(ticketSignatures, this.getBufferedTicketSignatures(invoice)),
+    );
+
+    if (matchingInvoices.length === 0) {
+      if (resGet1.data.value.length > 0) {
+        console.log(`Se encontraron ${resGet1.data.value.length} facturas con la misma cabecera, pero con tickets distintos. Se subirá ${salesData.no}.`);
+      }
       let url2 = `${process.env.baseURL}/v2.0/${tenant}/${entorno}/api/abast/hitIntegration/v2.0/companies(${companyID})/salesHeadersBuffer?$expand=salesLinesBuffer`;
       try {
         const response = await axios.post(
@@ -400,6 +409,41 @@ export class salesSilemaRecapManualService {
     } else {
       console.log(`Ya existe la ${tipo}: ${salesData.no}`);
     }
+  }
+
+  private getSourceTicketSignatures(rows: any[]): string[] {
+    const signatures = rows.map(row => {
+      const date = new Date(row.Fecha).toISOString().substring(0, 10);
+      const location = this.extractNumber(String(row.TIENDA)) || String(row.botiga || '');
+      return this.buildTicketSignature(location, row.TICKET, date);
+    });
+
+    return Array.from(new Set(signatures)).sort();
+  }
+
+  private getBufferedTicketSignatures(invoice: any): string[] {
+    const expandedLines = invoice.salesLinesBuffer?.value || invoice.salesLinesBuffer || [];
+    const signatures = expandedLines
+      .map(line => {
+        const description = String(line.description || '');
+        const ticketMatch = description.match(/^albar[aá]n\s+n[º°o.]?\s*(\d+)(?:\s|$)/i);
+        if (!ticketMatch) return null;
+
+        const date = String(line.shipmentDate || '').substring(0, 10);
+        return this.buildTicketSignature(line.locationCode, ticketMatch[1], date);
+      })
+      .filter(Boolean);
+
+    return Array.from(new Set(signatures)).sort() as string[];
+  }
+
+  private buildTicketSignature(locationCode: any, ticket: any, date: string): string {
+    return `${String(locationCode || '').trim()}|${String(ticket).trim()}|${date}`;
+  }
+
+  private haveSameTickets(expected: string[], existing: string[]): boolean {
+    if (expected.length === 0 || existing.length === 0 || expected.length !== existing.length) return false;
+    return expected.every((ticket, index) => ticket === existing[index]);
   }
 
   extractNumber(input: string): string | null {
